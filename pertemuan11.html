@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Simulasi Interaktif Antialiasing</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+            border: 2px solid #333;
+            background: #fff;
+        }
+
+        canvas {
+            cursor: crosshair;
+        }
+
+        select,
+        button {
+            margin: 10px 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .description {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        code {
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Simulasi Interaktif Antialiasing</h1>
+    <div>
+        <label for="aaMode">Mode Antialiasing:</label>
+        <select id="aaMode">
+            <option value="none">Tanpa Antialiasing</option>
+            <option value="fxaa">FXAA (Alpha Blending)</option>
+            <option value="msaa">MSAA (4x Multisample)</option>
+        </select>
+        <button onclick="clearCanvas()">Bersihkan Kanvas</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="drawCanvas" width="600" height="400"></canvas>
+    </div>
+
+    <div class="description">
+        <h3>📘 Penjelasan Rumus Antialiasing</h3>
+        <p><strong>Aliasing</strong>: Efek bergerigi pada tepi garis/objek karena keterbatasan piksel.</p>
+
+        <h4>🔬 FXAA (Fast Approximate Anti-Aliasing)</h4>
+        <p>
+            FXAA menggunakan alpha blending:
+            <br>
+            <code>C_result = α × C_foreground + (1 - α) × C_background</code>
+            <br>
+            Dimana <code>α</code> adalah transparansi piksel (0–1).
+        </p>
+
+        <h4>🧮 MSAA (Multisample Anti-Aliasing)</h4>
+        <p>
+            MSAA menghitung rata-rata dari beberapa sampel per piksel:
+            <br>
+            <code>C_result = (sample1 + sample2 + ... + sampleN) / N</code>
+            <br>
+            Dalam simulasi ini digunakan 4 sampel (4x MSAA).
+        </p>
+
+        <p>🧑‍🔬 Gunakan mouse untuk menggambar garis dan lihat efek antialiasing!</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("drawCanvas");
+        const ctx = canvas.getContext("2d");
+        let drawing = false;
+        let startX, startY;
+
+        canvas.addEventListener("mousedown", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            drawing = true;
+        });
+
+        canvas.addEventListener("mouseup", (e) => {
+            if (!drawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const endX = e.clientX - rect.left;
+            const endY = e.clientY - rect.top;
+            drawLine(startX, startY, endX, endY);
+            drawing = false;
+        });
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawLine(x1, y1, x2, y2) {
+            const mode = document.getElementById("aaMode").value;
+            if (mode === "none") {
+                drawPixelatedLine(x1, y1, x2, y2);
+            } else if (mode === "fxaa") {
+                drawFXAA(x1, y1, x2, y2);
+            } else if (mode === "msaa") {
+                drawMSAA(x1, y1, x2, y2);
+            }
+        }
+
+        // Tanpa antialiasing
+        function drawPixelatedLine(x1, y1, x2, y2) {
+            ctx.fillStyle = "#000";
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const steps = Math.max(Math.abs(dx), Math.abs(dy));
+            const xInc = dx / steps;
+            const yInc = dy / steps;
+
+            let x = x1, y = y1;
+            for (let i = 0; i < steps; i++) {
+                ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
+                x += xInc;
+                y += yInc;
+            }
+        }
+
+        // FXAA menggunakan alpha blending
+        function drawFXAA(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const steps = Math.max(Math.abs(dx), Math.abs(dy));
+            const xInc = dx / steps;
+            const yInc = dy / steps;
+
+            let x = x1, y = y1;
+            for (let i = 0; i < steps; i++) {
+                const ix = Math.floor(x);
+                const iy = Math.floor(y);
+                const fx = x - ix;
+                const fy = y - iy;
+                const alpha = 1 - Math.max(fx, fy);
+                ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+                ctx.fillRect(ix, iy, 1, 1);
+                x += xInc;
+                y += yInc;
+            }
+        }
+
+        // MSAA 4x multisample
+        function drawMSAA(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const steps = Math.max(Math.abs(dx), Math.abs(dy));
+            const xInc = dx / steps;
+            const yInc = dy / steps;
+
+            const offsets = [
+                [0.25, 0.25],
+                [0.75, 0.25],
+                [0.25, 0.75],
+                [0.75, 0.75],
+            ];
+
+            let x = x1, y = y1;
+            for (let i = 0; i < steps; i++) {
+                offsets.forEach(offset => {
+                    const ox = offset[0], oy = offset[1];
+                    const sx = Math.floor(x + ox);
+                    const sy = Math.floor(y + oy);
+                    ctx.fillStyle = "rgba(0,0,0,0.25)";
+                    ctx.fillRect(sx, sy, 1, 1);
+                });
+                x += xInc;
+                y += yInc;
+            }
+        }
+    </script>
+</body>
+
+</html>

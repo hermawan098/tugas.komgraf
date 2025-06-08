@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Algoritma Garis: Brute Force, DDA, Bresenham</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f9f9f9;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            display: block;
+            margin: 20px auto;
+            background: #fff;
+        }
+
+        .form-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        input,
+        select,
+        button {
+            margin: 5px;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .formula-section {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .formula {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #2980b9;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>✏️ Simulasi Algoritma Pembentukan Garis</h1>
+
+    <div class="form-section">
+        <label>x1: <input type="number" id="x1" value="2"></label>
+        <label>y1: <input type="number" id="y1" value="1"></label>
+        <label>x2: <input type="number" id="x2" value="8"></label>
+        <label>y2: <input type="number" id="y2" value="5"></label>
+        <label>
+            Algoritma:
+            <select id="algorithm">
+                <option value="brute">Brute Force</option>
+                <option value="dda">DDA</option>
+                <option value="bresenham">Bresenham</option>
+            </select>
+        </label>
+        <button onclick="drawLine()">Gambar Garis</button>
+    </div>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <div class="formula-section">
+        <h2>📘 Rumus & Penjelasan Algoritma</h2>
+
+        <h3>1. Brute Force</h3>
+        <div class="formula">
+            1. Hitung kemiringan: m = (y2 - y1) / (x2 - x1)
+            2. Untuk setiap x dari x1 ke x2:
+            y = m * (x - x1) + y1
+            Gambar titik (x, round(y))
+        </div>
+
+        <h3>2. DDA (Digital Differential Analyzer)</h3>
+        <div class="formula">
+            1. dx = x2 - x1, dy = y2 - y1
+            2. steps = max(|dx|, |dy|)
+            3. x_inc = dx / steps, y_inc = dy / steps
+            4. x = x1, y = y1
+            5. Untuk setiap langkah:
+            x += x_inc, y += y_inc
+            Gambar (round(x), round(y))
+        </div>
+
+        <h3>3. Bresenham</h3>
+        <div class="formula">
+            1. dx = x2 - x1, dy = y2 - y1
+            2. p = 2dy - dx
+            3. x = x1, y = y1
+            4. Untuk x dari x1 ke x2:
+            Gambar (x, y)
+            Jika p < 0: p +=2dy Else: y +=1 p +=2dy - 2dx </div>
+        </div>
+
+        <script>
+            function drawLine() {
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const x1 = parseInt(document.getElementById('x1').value);
+                const y1 = parseInt(document.getElementById('y1').value);
+                const x2 = parseInt(document.getElementById('x2').value);
+                const y2 = parseInt(document.getElementById('y2').value);
+                const algorithm = document.getElementById('algorithm').value;
+
+                const scale = 20;
+
+                function plot(x, y) {
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(x * scale, canvas.height - y * scale, scale - 1, scale - 1);
+                }
+
+                if (algorithm === 'brute') {
+                    const m = (y2 - y1) / (x2 - x1);
+                    for (let x = x1; x <= x2; x++) {
+                        const y = m * (x - x1) + y1;
+                        plot(x, Math.round(y));
+                    }
+                }
+
+                else if (algorithm === 'dda') {
+                    const dx = x2 - x1;
+                    const dy = y2 - y1;
+                    const steps = Math.max(Math.abs(dx), Math.abs(dy));
+                    const x_inc = dx / steps;
+                    const y_inc = dy / steps;
+
+                    let x = x1;
+                    let y = y1;
+
+                    for (let i = 0; i <= steps; i++) {
+                        plot(Math.round(x), Math.round(y));
+                        x += x_inc;
+                        y += y_inc;
+                    }
+                }
+
+                else if (algorithm === 'bresenham') {
+                    let x = x1;
+                    let y = y1;
+                    const dx = x2 - x1;
+                    const dy = y2 - y1;
+                    let p = 2 * dy - dx;
+
+                    while (x <= x2) {
+                        plot(x, y);
+                        x++;
+                        if (p < 0) {
+                            p += 2 * dy;
+                        } else {
+                            y++;
+                            p += 2 * dy - 2 * dx;
+                        }
+                    }
+                }
+            }
+        </script>
+
+</body>
+
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Aplikasi Grafika Komputer - Animasi Interaktif</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        header {
+            background: #006699;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        main {
+            padding: 2rem;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        canvas {
+            border: 1px solid #aaa;
+            display: block;
+            margin: 1rem auto;
+            background-color: black;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        button {
+            padding: 0.6rem 1.2rem;
+            margin: 0 10px;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005c99;
+        }
+
+        .rumus {
+            background: white;
+            padding: 1rem;
+            border-left: 5px solid #007acc;
+            margin-top: 2rem;
+        }
+
+        code {
+            font-family: monospace;
+            display: block;
+            background: #f7f7f7;
+            padding: 0.5rem;
+            color: #d63384;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Aplikasi Grafika Komputer</h1>
+        <p>Pertemuan 14 - Teknik Informatika Universitas Pamulang</p>
+    </header>
+    <main>
+        <canvas id="kanvas" width="600" height="300"></canvas>
+        <div class="controls">
+            <button onclick="mulaiAnimasi()">Tampilkan Animasi</button>
+            <button onclick="pauseAnimasi()">Jeda</button>
+            <button onclick="hentikanAnimasi()">Bersihkan</button>
+        </div>
+
+        <div class="rumus">
+            <h3>📐 Rumus & Konsep Dasar</h3>
+            <code>
+Transformasi 2D:
+- Translasi: x' = x + dx, y' = y + dy
+- Rotasi: x' = x*cos(θ) - y*sin(θ)
+- Skala: x' = x * sx, y' = y * sy
+
+Animasi:
+- Menggunakan setInterval untuk loop per frame.
+- Gunakan clearInterval untuk menghentikan sementara.
+
+Grafika 2D:
+- ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+- ctx.arc(x, y, r, 0, 2π);
+      </code>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById("kanvas");
+        const ctx = canvas.getContext("2d");
+
+        let xOrang = -100;
+        let yOrang = 120;
+        let frame = 1;
+        let intervalId = null;
+
+        function drawText() {
+            const warna = `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},1)`;
+            ctx.font = "bold 26px Comic Sans MS";
+            ctx.fillStyle = warna;
+            ctx.fillText("BAGUS HERMAWAN", 30 + Math.random() * 10, 50 + Math.random() * 10);
+        }
+
+        function drawOrang(x, y, frame) {
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "white";
+            ctx.fillStyle = "white";
+
+            // Kepala
+            ctx.beginPath();
+            ctx.arc(x + 46, y, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Badan & anggota tubuh
+            ctx.beginPath();
+            ctx.moveTo(x + 46, y + 12);
+            ctx.lineTo(x + 46, y + 60);
+            if (frame === 1) {
+                ctx.lineTo(x + 26, y + 90);
+                ctx.moveTo(x + 46, y + 60);
+                ctx.lineTo(x + 66, y + 90);
+            } else {
+                ctx.lineTo(x + 46, y + 100);
+                ctx.moveTo(x + 46, y + 60);
+                ctx.lineTo(x + 40, y + 100);
+            }
+
+            // Tangan
+            ctx.moveTo(x + 46, y + 20);
+            ctx.lineTo(x + 20, y + 50);
+            ctx.moveTo(x + 46, y + 20);
+            ctx.lineTo(x + 72, y + 50);
+            ctx.stroke();
+        }
+
+        function animasiFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawText();
+            drawOrang(xOrang, yOrang, frame);
+            xOrang += 10;
+            frame = frame === 1 ? 2 : 1;
+            if (xOrang > canvas.width) xOrang = -100;
+        }
+
+        function mulaiAnimasi() {
+            if (intervalId !== null) return;
+            intervalId = setInterval(animasiFrame, 150);
+        }
+
+        function pauseAnimasi() {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+
+        function hentikanAnimasi() {
+            pauseAnimasi();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            xOrang = -100;
+        }
+    </script>
+</body>
+
+</html>

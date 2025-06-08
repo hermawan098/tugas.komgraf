@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Proyeksi Geometri Bidang</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f8f9fa;
+            color: #212529;
+            padding: 20px;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: #343a40;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        canvas {
+            display: block;
+            margin: auto;
+            background: #fff;
+            border: 2px solid #dee2e6;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .section {
+            background: #ffffff;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 900px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .formula {
+            background: #f1f3f5;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            border-left: 4px solid #0d6efd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>📐 Proyeksi Geometri Bidang</h1>
+
+    <div class="controls">
+        <button onclick="drawOrthographic()">Proyeksi Orthographic</button>
+        <button onclick="drawIsometric()">Proyeksi Isometrik</button>
+        <button onclick="drawOblique()">Proyeksi Oblique</button>
+        <button onclick="drawPerspective()">Proyeksi Perspektif</button>
+    </div>
+
+    <canvas id="canvas" width="500" height="400"></canvas>
+
+    <div class="section">
+        <h2>🔢 Rumus-Rumus Proyeksi</h2>
+
+        <h3>1. Orthographic (tegak lurus sumbu)</h3>
+        <div class="formula">
+            Proyeksi ke bidang xy:
+            P'(x, y) ← dari P(x, y, z)
+            Tidak ada transformasi z
+        </div>
+
+        <h3>2. Oblique (miring, sudut θ)</h3>
+        <div class="formula">
+            Proyeksi ke bidang xy:
+            xp = x + z * cos(θ)
+            yp = y + z * sin(θ)
+
+            Jika:
+            θ = 45° dan skala = 1 → Cavalier
+            θ = 63.4° dan skala = 0.5 → Cabinet
+        </div>
+
+        <h3>3. Perspektif (realistik)</h3>
+        <div class="formula">
+            Dari titik (x, y, z), proyeksi ke bidang z = 0:
+            xp = (x * d) / (z + d)
+            yp = (y * d) / (z + d)
+
+            d = jarak dari titik pusat ke bidang proyeksi
+        </div>
+
+        <h3>4. Isometrik (axonometric simetris)</h3>
+        <div class="formula">
+            Gunakan rotasi terhadap sumbu:
+            x' = x * cos(30°) - y * cos(30°)
+            y' = x * sin(30°) + y * sin(30°) - z
+
+            Atau gunakan matriks isometrik 3D → 2D:
+            [x'] = [ √3/2 -√3/2 0 ] [x]
+            [y'] [1/2 1/2 -1 ] [y]
+            [z]
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Objek kubus 3D sederhana
+        const cube = [
+            [0, 0, 0], [100, 0, 0], [100, 100, 0], [0, 100, 0], // bawah
+            [0, 0, 100], [100, 0, 100], [100, 100, 100], [0, 100, 100] // atas
+        ];
+
+        const edges = [
+            [0, 1], [1, 2], [2, 3], [3, 0], // bawah
+            [4, 5], [5, 6], [6, 7], [7, 4], // atas
+            [0, 4], [1, 5], [2, 6], [3, 7]  // vertikal
+        ];
+
+        function projectOrthographic([x, y, z]) {
+            return [x + 150, 300 - y];
+        }
+
+        function projectIsometric([x, y, z]) {
+            const angle = Math.PI / 6;
+            const x2d = (x - y) * Math.cos(angle);
+            const y2d = (x + y) * Math.sin(angle) - z;
+            return [x2d + 250, 200 - y2d];
+        }
+
+        function projectOblique([x, y, z], angle = 45, scale = 1) {
+            const rad = angle * Math.PI / 180;
+            const x2d = x + scale * z * Math.cos(rad);
+            const y2d = y + scale * z * Math.sin(rad);
+            return [x2d + 150, 300 - y2d];
+        }
+
+        function projectPerspective([x, y, z], d = 200) {
+            const xp = (x * d) / (z + d);
+            const yp = (y * d) / (z + d);
+            return [xp + 250, 300 - yp];
+        }
+
+        function drawEdges(projectFn) {
+            clearCanvas();
+            const points = cube.map(p => projectFn(p));
+            ctx.strokeStyle = "#000";
+            edges.forEach(([i, j]) => {
+                ctx.beginPath();
+                ctx.moveTo(...points[i]);
+                ctx.lineTo(...points[j]);
+                ctx.stroke();
+            });
+        }
+
+        function drawOrthographic() {
+            drawEdges(projectOrthographic);
+        }
+
+        function drawIsometric() {
+            drawEdges(projectIsometric);
+        }
+
+        function drawOblique() {
+            drawEdges(p => projectOblique(p, 45, 1)); // Cavalier
+        }
+
+        function drawPerspective() {
+            drawEdges(p => projectPerspective(p, 150));
+        }
+    </script>
+
+</body>
+
+</html>

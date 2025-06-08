@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Transformasi, Translasi, dan Rotasi</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f8f9fa;
+            color: #212529;
+            padding: 20px;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: #343a40;
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background: #fff;
+            border: 2px solid #dee2e6;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 5px;
+            width: 50px;
+            margin: 5px;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .section {
+            background: #fff;
+            padding: 20px;
+            margin: 30px auto;
+            max-width: 900px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .formula {
+            background: #f1f3f5;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            border-left: 4px solid #0d6efd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🧭 Transformasi 2D: Translasi & Rotasi</h1>
+
+    <div class="controls">
+        <label>Translasi tx: <input type="number" id="tx" value="50"></label>
+        <label>ty: <input type="number" id="ty" value="30"></label><br>
+        <label>Rotasi (°): <input type="number" id="angle" value="30"></label>
+        <button onclick="transform()">Transformasi</button>
+    </div>
+
+    <canvas id="canvas" width="500" height="400"></canvas>
+
+    <div class="section">
+        <h2>📐 Rumus Transformasi 2D</h2>
+
+        <h3>1. Translasi</h3>
+        <div class="formula">
+            Diberikan titik (x, y), dan translasi tx, ty:
+            x' = x + tx
+            y' = y + ty
+        </div>
+
+        <h3>2. Rotasi (terhadap pusat (xp, yp))</h3>
+        <div class="formula">
+            x' = xp + (x - xp) * cos(θ) - (y - yp) * sin(θ)
+            y' = yp + (x - xp) * sin(θ) + (y - yp) * cos(θ)
+
+            Jika pusat rotasi di (0, 0), maka:
+            x' = x * cos(θ) - y * sin(θ)
+            y' = x * sin(θ) + y * cos(θ)
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        let triangle = [
+            { x: 100, y: 100 },
+            { x: 200, y: 100 },
+            { x: 100, y: 200 }
+        ];
+
+        function drawTriangle(points, color = "blue") {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.closePath();
+            ctx.strokeStyle = color;
+            ctx.stroke();
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function transform() {
+            const tx = parseFloat(document.getElementById("tx").value);
+            const ty = parseFloat(document.getElementById("ty").value);
+            const angleDeg = parseFloat(document.getElementById("angle").value);
+            const angleRad = angleDeg * Math.PI / 180;
+
+            const transformed = triangle.map(p => {
+                // Translasi dulu
+                let x = p.x + tx;
+                let y = p.y + ty;
+
+                // Rotasi terhadap pusat (0,0)
+                const xr = x * Math.cos(angleRad) - y * Math.sin(angleRad);
+                const yr = x * Math.sin(angleRad) + y * Math.cos(angleRad);
+
+                return { x: xr, y: yr };
+            });
+
+            clearCanvas();
+            drawTriangle(triangle, "gray");        // Asli
+            drawTriangle(transformed, "crimson");  // Transformasi
+        }
+
+        drawTriangle(triangle); // Gambar awal
+    </script>
+
+</body>
+
+</html>

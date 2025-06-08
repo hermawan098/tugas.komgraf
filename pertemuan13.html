@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Visualisasi Grafika 3D Interaktif</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #eef2f5;
+            color: #333;
+        }
+
+        header {
+            background: #005c99;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: auto;
+            padding: 2rem;
+        }
+
+        .rumus {
+            background: white;
+            padding: 1rem;
+            border-left: 5px solid #007acc;
+            margin-bottom: 2rem;
+            border-radius: 5px;
+        }
+
+        code {
+            display: block;
+            white-space: pre;
+            font-family: monospace;
+            color: #d63384;
+            background: #f8f8f8;
+            padding: 0.5rem;
+            border-radius: 3px;
+        }
+
+        .canvas-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        canvas {
+            display: block;
+            border: 2px solid #007acc;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+
+        .canvas-section {
+            text-align: center;
+        }
+
+        .canvas-section h3 {
+            color: #005c99;
+            margin-bottom: 1rem;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 1rem auto;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            margin: 0 0.5rem;
+            padding: 0.6rem 1.2rem;
+            font-size: 14px;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #005c99;
+        }
+
+        button.active {
+            background-color: #28a745;
+        }
+
+        .info-panel {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🖥️ Pemrograman Komputer Grafik - API & Citra Digital</h1>
+        <p>Pertemuan 13 - Teknik Informatika Universitas Pamulang</p>
+    </header>
+
+    <main>
+        <h2>📐 Rumus Dasar Grafika 3D & API</h2>
+        <div class="rumus">
+            <code>
+🔹 Koordinat 3D: P(x, y, z)
+
+🔹 Transformasi Matrix 4x4:
+   [x']   [m11 m12 m13 m14] [x]
+   [y'] = [m21 m22 m23 m24] [y]
+   [z']   [m31 m32 m33 m34] [z]
+   [w']   [m41 m42 m43 m44] [1]
+
+🔹 Proyeksi Perspektif:
+   x_screen = (x * focal) / (z + distance)
+   y_screen = (y * focal) / (z + distance)
+
+🔹 Lighting (Phong Model):
+   I = Ia + Id * (N·L) + Is * (R·V)^n
+
+🔹 Texture Mapping:
+   u = x / width, v = y / height
+            </code>
+        </div>
+
+        <div class="controls">
+            <h3>🎮 Kontrol Animasi Grafika 3D</h3>
+            <button onclick="toggleAnimation('cube')" id="cubeBtn">🟦 Kubus 3D</button>
+            <button onclick="toggleAnimation('pyramid')" id="pyramidBtn">🔺 Piramida</button>
+            <button onclick="toggleAnimation('sphere')" id="sphereBtn">🌐 Sphere</button>
+            <button onclick="toggleAnimation('wireframe')" id="wireframeBtn">📐 Wireframe</button>
+            <button onclick="resetAll()">🔄 Reset All</button>
+        </div>
+
+        <div class="canvas-grid">
+            <div class="canvas-section">
+                <h3>🎯 3D Geometri Primitif</h3>
+                <canvas id="canvas3d" width="400" height="300"></canvas>
+            </div>
+            <div class="canvas-section">
+                <h3>🖼️ Citra Digital & Pixel Art</h3>
+                <canvas id="canvasPixel" width="400" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <h3>📚 Konsep API & Citra Digital:</h3>
+            <ul>
+                <li><strong>Graphics API:</strong> OpenGL, DirectX, WebGL untuk rendering 3D</li>
+                <li><strong>Vertex Buffer:</strong> Penyimpanan data geometri dalam memori GPU</li>
+                <li><strong>Shader Programming:</strong> Vertex shader dan Fragment shader</li>
+                <li><strong>Texture Filtering:</strong> Bilinear, Trilinear, Anisotropic filtering</li>
+                <li><strong>Digital Image:</strong> RGB, RGBA, Color depth, Alpha blending</li>
+                <li><strong>Rasterization:</strong> Konversi vektor ke pixel bitmap</li>
+            </ul>
+        </div>
+    </main>
+
+    <script>
+        const canvas3d = document.getElementById("canvas3d");
+        const ctx3d = canvas3d.getContext("2d");
+        const canvasPixel = document.getElementById("canvasPixel");
+        const ctxPixel = canvasPixel.getContext("2d");
+
+        let animations = {
+            cube: false,
+            pyramid: false,
+            sphere: false,
+            wireframe: false
+        };
+
+        let animationId;
+        let time = 0;
+
+        // 3D Objects data
+        const objects = {
+            cube: [
+                [-30, -30, -30], [30, -30, -30], [30, 30, -30], [-30, 30, -30],
+                [-30, -30, 30], [30, -30, 30], [30, 30, 30], [-30, 30, 30]
+            ],
+            cubeEdges: [
+                [0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4],
+                [0, 4], [1, 5], [2, 6], [3, 7]
+            ],
+            pyramid: [
+                [0, -40, 0], [-30, 20, -30], [30, 20, -30],
+                [30, 20, 30], [-30, 20, 30]
+            ],
+            pyramidEdges: [
+                [0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [2, 3], [3, 4], [4, 1]
+            ]
+        };
+
+        function rotateX(point, angle) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            return [
+                point[0],
+                point[1] * cos - point[2] * sin,
+                point[1] * sin + point[2] * cos
+            ];
+        }
+
+        function rotateY(point, angle) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            return [
+                point[0] * cos + point[2] * sin,
+                point[1],
+                -point[0] * sin + point[2] * cos
+            ];
+        }
+
+        function project3D(point, canvas) {
+            const distance = 200;
+            const z = point[2] + distance;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            return {
+                x: centerX + (point[0] * distance) / z,
+                y: centerY + (point[1] * distance) / z
+            };
+        }
+
+        function drawObject(ctx, vertices, edges, color) {
+            const rotX = time * 0.01;
+            const rotY = time * 0.015;
+
+            const rotatedPoints = vertices.map(point => {
+                let rotated = rotateX(point, rotX);
+                rotated = rotateY(rotated, rotY);
+                return project3D(rotated, ctx.canvas);
+            });
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            edges.forEach(([a, b]) => {
+                ctx.moveTo(rotatedPoints[a].x, rotatedPoints[a].y);
+                ctx.lineTo(rotatedPoints[b].x, rotatedPoints[b].y);
+            });
+
+            ctx.stroke();
+
+            // Draw vertices
+            ctx.fillStyle = color;
+            rotatedPoints.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawSphere(ctx, radius, color) {
+            const centerX = ctx.canvas.width / 2;
+            const centerY = ctx.canvas.height / 2;
+            const rotX = time * 0.02;
+            const rotY = time * 0.025;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+
+            // Draw meridians and parallels
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                for (let j = 0; j <= 32; j++) {
+                    const t = (j / 32) * Math.PI * 2;
+                    let x = radius * Math.cos(t) * Math.cos(angle);
+                    let y = radius * Math.sin(t);
+                    let z = radius * Math.cos(t) * Math.sin(angle);
+
+                    // Apply rotation
+                    let rotated = rotateX([x, y, z], rotX);
+                    rotated = rotateY(rotated, rotY);
+
+                    const projected = project3D(rotated, ctx.canvas);
+
+                    if (j === 0) ctx.moveTo(projected.x, projected.y);
+                    else ctx.lineTo(projected.x, projected.y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawPixelArt() {
+            ctxPixel.fillStyle = '#000';
+            ctxPixel.fillRect(0, 0, canvasPixel.width, canvasPixel.height);
+
+            const pixelSize = 8;
+            const cols = Math.floor(canvasPixel.width / pixelSize);
+            const rows = Math.floor(canvasPixel.height / pixelSize);
+
+            for (let x = 0; x < cols; x++) {
+                for (let y = 0; y < rows; y++) {
+                    const wave = Math.sin((x + time * 0.1) * 0.3) * Math.cos((y + time * 0.08) * 0.2);
+                    const intensity = (wave + 1) * 0.5;
+
+                    const r = Math.floor(intensity * 255);
+                    const g = Math.floor((1 - intensity) * 255);
+                    const b = Math.floor(Math.sin(time * 0.05 + x * 0.1) * 127 + 128);
+
+                    ctxPixel.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    ctxPixel.fillRect(x * pixelSize, y * pixelSize, pixelSize - 1, pixelSize - 1);
+                }
+            }
+
+            // Add digital grid overlay
+            ctxPixel.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+            ctxPixel.lineWidth = 1;
+            for (let i = 0; i <= cols; i++) {
+                ctxPixel.beginPath();
+                ctxPixel.moveTo(i * pixelSize, 0);
+                ctxPixel.lineTo(i * pixelSize, canvasPixel.height);
+                ctxPixel.stroke();
+            }
+            for (let i = 0; i <= rows; i++) {
+                ctxPixel.beginPath();
+                ctxPixel.moveTo(0, i * pixelSize);
+                ctxPixel.lineTo(canvasPixel.width, i * pixelSize);
+                ctxPixel.stroke();
+            }
+        }
+
+        function animate() {
+            // Clear 3D canvas
+            ctx3d.fillStyle = '#1a1a1a';
+            ctx3d.fillRect(0, 0, canvas3d.width, canvas3d.height);
+
+            // Draw active 3D objects
+            if (animations.cube || animations.wireframe) {
+                drawObject(ctx3d, objects.cube, objects.cubeEdges, '#00ff88');
+            }
+
+            if (animations.pyramid) {
+                drawObject(ctx3d, objects.pyramid, objects.pyramidEdges, '#ff6644');
+            }
+
+            if (animations.sphere) {
+                drawSphere(ctx3d, 40, '#4488ff');
+            }
+
+            // Always update pixel art
+            drawPixelArt();
+
+            time++;
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function toggleAnimation(type) {
+            animations[type] = !animations[type];
+            const btn = document.getElementById(type + 'Btn');
+            btn.classList.toggle('active', animations[type]);
+
+            // Start animation if any is active
+            const hasActiveAnimation = Object.values(animations).some(active => active);
+            if (hasActiveAnimation && !animationId) {
+                animate();
+            } else if (!hasActiveAnimation && animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function resetAll() {
+            Object.keys(animations).forEach(key => {
+                animations[key] = false;
+                const btn = document.getElementById(key + 'Btn');
+                btn.classList.remove('active');
+            });
+
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            time = 0;
+            ctx3d.fillStyle = '#1a1a1a';
+            ctx3d.fillRect(0, 0, canvas3d.width, canvas3d.height);
+
+            ctxPixel.fillStyle = '#000';
+            ctxPixel.fillRect(0, 0, canvasPixel.width, canvasPixel.height);
+        }
+
+        // Initialize
+        animate();
+    </script>
+</body>
+
+</html>

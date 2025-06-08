@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Simulasi Viewing & Clipping</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2f7;
+            padding: 20px;
+        }
+
+        canvas {
+            border: 2px solid #000;
+            display: block;
+            margin: 20px 0;
+            background: #fff;
+        }
+
+        .controls,
+        .legend,
+        .penjelasan {
+            background: #ffffff;
+            padding: 15px;
+            margin-top: 10px;
+            border-left: 5px solid #0066cc;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="number"] {
+            width: 60px;
+        }
+
+        h2 {
+            color: #003366;
+        }
+
+        .legend div {
+            margin: 4px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Simulasi Interaktif: Viewing dan Clipping</h1>
+
+    <div class="controls">
+        <h2>Input Koordinat Garis</h2>
+        <label>x1: <input type="number" id="x1" value="40"></label>
+        <label>y1: <input type="number" id="y1" value="40"></label>
+        <label>x2: <input type="number" id="x2" value="270"></label>
+        <label>y2: <input type="number" id="y2" value="180"></label>
+        <button onclick="runSimulasi()">Simulasikan</button>
+    </div>
+
+    <canvas id="canvas" width="800" height="400"></canvas>
+
+    <div class="legend">
+        <h2>Keterangan Warna</h2>
+        <div><b>🔷 Biru</b>: Area Window dan Viewport</div>
+        <div><b>🟢 Hijau</b>: Garis asli</div>
+        <div><b>🔴 Merah</b>: Garis setelah clipping</div>
+    </div>
+
+    <div class="penjelasan">
+        <h2>🔢 Rumus Transformasi Window to Viewport</h2>
+        <pre>
+xv = xvmin + (x - xwmin) * (xvmax - xvmin) / (xwmax - xwmin)
+yv = yvmin + (y - ywmin) * (yvmax - yvmin) / (ywmax - ywmin)
+    </pre>
+
+        <h2>📐 Cohen-Sutherland Line Clipping</h2>
+        <p>
+            Titik diklasifikasikan menggunakan <b>kode region 4-bit</b> berdasarkan lokasi relatif terhadap Window:
+        </p>
+        <ul>
+            <li>TOP = 1000</li>
+            <li>BOTTOM = 0100</li>
+            <li>RIGHT = 0010</li>
+            <li>LEFT = 0001</li>
+        </ul>
+        <p>
+            Algoritma menggunakan operasi logika OR dan AND terhadap dua titik garis.
+            Jika <code>outcode0 | outcode1 == 0</code>, garis sepenuhnya di dalam.
+            Jika <code>outcode0 & outcode1 != 0</code>, garis sepenuhnya di luar.
+            Jika tidak, potong bagian luar dan ulangi sampai keputusan bisa diambil.
+        </p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Koordinat Window dan Viewport
+        const windowBox = { xmin: 50, xmax: 250, ymin: 50, ymax: 200 };
+        const viewportBox = { xmin: 500, xmax: 750, ymin: 50, ymax: 200 };
+
+        // Konstanta Cohen-Sutherland
+        const INSIDE = 0, LEFT = 1, RIGHT = 2, BOTTOM = 4, TOP = 8;
+
+        function computeOutCode(x, y, xmin, xmax, ymin, ymax) {
+            let code = INSIDE;
+            if (x < xmin) code |= LEFT;
+            else if (x > xmax) code |= RIGHT;
+            if (y < ymin) code |= BOTTOM;
+            else if (y > ymax) code |= TOP;
+            return code;
+        }
+
+        function cohenSutherlandClip(x0, y0, x1, y1, xmin, xmax, ymin, ymax) {
+            let outcode0 = computeOutCode(x0, y0, xmin, xmax, ymin, ymax);
+            let outcode1 = computeOutCode(x1, y1, xmin, xmax, ymin, ymax);
+            let accept = false;
+
+            while (true) {
+                if (!(outcode0 | outcode1)) {
+                    accept = true;
+                    break;
+                } else if (outcode0 & outcode1) {
+                    break;
+                } else {
+                    let outcodeOut = outcode0 ? outcode0 : outcode1;
+                    let x, y;
+
+                    if (outcodeOut & TOP) {
+                        x = x0 + (x1 - x0) * (ymax - y0) / (y1 - y0);
+                        y = ymax;
+                    } else if (outcodeOut & BOTTOM) {
+                        x = x0 + (x1 - x0) * (ymin - y0) / (y1 - y0);
+                        y = ymin;
+                    } else if (outcodeOut & RIGHT) {
+                        y = y0 + (y1 - y0) * (xmax - x0) / (x1 - x0);
+                        x = xmax;
+                    } else {
+                        y = y0 + (y1 - y0) * (xmin - x0) / (x1 - x0);
+                        x = xmin;
+                    }
+
+                    if (outcodeOut === outcode0) {
+                        x0 = x; y0 = y;
+                        outcode0 = computeOutCode(x0, y0, xmin, xmax, ymin, ymax);
+                    } else {
+                        x1 = x; y1 = y;
+                        outcode1 = computeOutCode(x1, y1, xmin, xmax, ymin, ymax);
+                    }
+                }
+            }
+
+            return accept ? { x0, y0, x1, y1 } : null;
+        }
+
+        function transform(x, y, w, v) {
+            const sx = (v.xmax - v.xmin) / (w.xmax - w.xmin);
+            const sy = (v.ymax - v.ymin) / (w.ymax - w.ymin);
+            return {
+                x: v.xmin + (x - w.xmin) * sx,
+                y: v.ymin + (y - w.ymin) * sy
+            };
+        }
+
+        function drawBox(box, color) {
+            ctx.strokeStyle = color;
+            ctx.strokeRect(box.xmin, box.ymin, box.xmax - box.xmin, box.ymax - box.ymin);
+        }
+
+        function drawLine(x1, y1, x2, y2, color) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function runSimulasi() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar Window dan Viewport
+            drawBox(windowBox, "blue");
+            drawBox(viewportBox, "blue");
+
+            // Ambil input koordinat
+            const x1 = parseFloat(document.getElementById("x1").value);
+            const y1 = parseFloat(document.getElementById("y1").value);
+            const x2 = parseFloat(document.getElementById("x2").value);
+            const y2 = parseFloat(document.getElementById("y2").value);
+
+            // Gambar garis asli di window
+            drawLine(x1, y1, x2, y2, "green");
+
+            const clipped = cohenSutherlandClip(x1, y1, x2, y2,
+                windowBox.xmin, windowBox.xmax,
+                windowBox.ymin, windowBox.ymax);
+
+            if (clipped) {
+                // Garis hasil clipping di window
+                drawLine(clipped.x0, clipped.y0, clipped.x1, clipped.y1, "red");
+
+                // Transformasi ke viewport
+                const p1 = transform(clipped.x0, clipped.y0, windowBox, viewportBox);
+                const p2 = transform(clipped.x1, clipped.y1, windowBox, viewportBox);
+
+                // Gambar di viewport
+                drawLine(p1.x, p1.y, p2.x, p2.y, "red");
+            }
+        }
+
+        // Jalankan saat pertama kali
+        runSimulasi();
+    </script>
+</body>
+
+</html>

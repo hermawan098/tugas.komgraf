@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Simulasi Pewarnaan Graf (Welch-Powell)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fc;
+            padding: 20px;
+        }
+
+        canvas {
+            border: 2px solid #444;
+            background: #fff;
+            display: block;
+            margin: 20px 0;
+        }
+
+        .panel {
+            background: #fff;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 5px solid #007acc;
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel h2 {
+            color: #005090;
+        }
+
+        .color-selector {
+            margin: 10px 0;
+        }
+
+        .color-selector select {
+            padding: 4px;
+            margin-left: 10px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #007acc;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #005fa3;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🎨 Simulasi Pewarnaan Graf dengan Algoritma Welch-Powell</h1>
+
+    <canvas id="canvas" width="600" height="400"></canvas>
+
+    <div class="panel">
+        <h2>Langkah-Langkah Algoritma Welch-Powell</h2>
+        <ol>
+            <li>Urutkan simpul berdasarkan derajat tertinggi ke terendah.</li>
+            <li>Berikan warna pertama ke simpul pertama.</li>
+            <li>Warnai simpul lain yang tidak bertetangga dengan simpul yang telah diwarnai.</li>
+            <li>Ulangi proses untuk warna selanjutnya hingga semua simpul terwarnai.</li>
+        </ol>
+        <p><strong>Bilangan kromatik</strong> adalah jumlah warna minimum yang dibutuhkan.</p>
+    </div>
+
+    <div class="panel" id="color-controls">
+        <h2>🎛️ Atur Warna Simpul Secara Manual</h2>
+        <div id="controls-container"></div>
+        <button onclick="updateColors()">Perbarui Warna</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Definisi graf
+        const nodes = [
+            { id: 'A', x: 100, y: 100 },
+            { id: 'B', x: 250, y: 80 },
+            { id: 'C', x: 400, y: 100 },
+            { id: 'D', x: 150, y: 250 },
+            { id: 'E', x: 300, y: 250 }
+        ];
+
+        const edges = [
+            ['A', 'B'], ['A', 'D'],
+            ['B', 'C'], ['B', 'D'],
+            ['C', 'E'], ['D', 'E'], ['C', 'D']
+        ];
+
+        const allColors = {
+            'Merah': '#e74c3c',
+            'Biru': '#3498db',
+            'Hijau': '#2ecc71',
+            'Kuning': '#f1c40f',
+            'Ungu': '#9b59b6'
+        };
+
+        let colorMap = {};
+
+        // Hitung derajat dan jalankan algoritma Welch-Powell
+        function runWelchPowell() {
+            const adjacency = {};
+            nodes.forEach(n => adjacency[n.id] = []);
+            edges.forEach(([a, b]) => {
+                adjacency[a].push(b);
+                adjacency[b].push(a);
+            });
+
+            const sortedNodes = [...nodes].map(n => ({
+                id: n.id,
+                degree: adjacency[n.id].length
+            })).sort((a, b) => b.degree - a.degree);
+
+            const usedColors = Object.values(allColors);
+            colorMap = {};
+            let colorIndex = 0;
+
+            sortedNodes.forEach(({ id }) => {
+                if (colorMap[id]) return;
+                colorMap[id] = usedColors[colorIndex];
+                for (let other of sortedNodes) {
+                    if (colorMap[other.id]) continue;
+                    const conflict = Object.entries(colorMap).some(([nodeId, color]) =>
+                        color === usedColors[colorIndex] &&
+                        adjacency[other.id].includes(nodeId)
+                    );
+                    if (!conflict) colorMap[other.id] = usedColors[colorIndex];
+                }
+                colorIndex++;
+            });
+
+            drawGraph();
+            renderColorSelectors();
+        }
+
+        // Gambar graf di canvas
+        function drawGraph() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Garis
+            edges.forEach(([from, to]) => {
+                const n1 = nodes.find(n => n.id === from);
+                const n2 = nodes.find(n => n.id === to);
+                ctx.beginPath();
+                ctx.moveTo(n1.x, n1.y);
+                ctx.lineTo(n2.x, n2.y);
+                ctx.strokeStyle = '#666';
+                ctx.stroke();
+            });
+
+            // Simpul
+            nodes.forEach(n => {
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 25, 0, Math.PI * 2);
+                ctx.fillStyle = colorMap[n.id] || '#ffffff';
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.stroke();
+                ctx.fillStyle = '#000';
+                ctx.font = "bold 14px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(n.id, n.x, n.y + 5);
+            });
+        }
+
+        // Buat dropdown untuk edit warna
+        function renderColorSelectors() {
+            const container = document.getElementById('controls-container');
+            container.innerHTML = '';
+            for (let node of nodes) {
+                const div = document.createElement('div');
+                div.className = 'color-selector';
+
+                const label = document.createElement('label');
+                label.textContent = `Simpul ${node.id}:`;
+
+                const select = document.createElement('select');
+                select.id = `select-${node.id}`;
+                for (let [name, hex] of Object.entries(allColors)) {
+                    const option = document.createElement('option');
+                    option.value = hex;
+                    option.text = name;
+                    if (colorMap[node.id] === hex) option.selected = true;
+                    select.appendChild(option);
+                }
+
+                div.appendChild(label);
+                div.appendChild(select);
+                container.appendChild(div);
+            }
+        }
+
+        // Perbarui warna dari dropdown
+        function updateColors() {
+            for (let node of nodes) {
+                const hex = document.getElementById(`select-${node.id}`).value;
+                colorMap[node.id] = hex;
+            }
+            drawGraph();
+        }
+
+        // Jalankan saat halaman dimuat
+        runWelchPowell();
+    </script>
+
+</body>
+
+</html>

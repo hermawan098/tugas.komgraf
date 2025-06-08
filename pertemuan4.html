@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Midpoint Lingkaran & Elips - Lengkap dengan Rumus</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f8f9fa;
+            color: #212529;
+            padding: 20px;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: #343a40;
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background: #fff;
+            border: 2px solid #dee2e6;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input,
+        select,
+        button {
+            margin: 5px;
+            padding: 6px 10px;
+            font-size: 14px;
+        }
+
+        .section {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 900px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .formula {
+            font-family: monospace;
+            background: #f1f3f5;
+            padding: 15px;
+            border-left: 4px solid #0d6efd;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🧮 Midpoint Lingkaran & Elips (Algoritma + Rumus Lengkap)</h1>
+
+    <div class="controls">
+        <label>Pilih Algoritma:
+            <select id="algo">
+                <option value="circle">Midpoint Lingkaran</option>
+                <option value="ellipse">Midpoint Elips</option>
+            </select>
+        </label><br>
+        <label>xc: <input type="number" id="xc" value="200"></label>
+        <label>yc: <input type="number" id="yc" value="200"></label>
+        <label>r / rx: <input type="number" id="rx" value="80"></label>
+        <label>ry (untuk elips): <input type="number" id="ry" value="50"></label><br>
+        <button onclick="draw()">Gambar</button>
+    </div>
+
+    <canvas id="canvas" width="400" height="400"></canvas>
+
+    <!-- Rumus Lingkaran -->
+    <div class="section">
+        <h2>📘 Rumus Lengkap Midpoint Lingkaran</h2>
+        <div class="formula">
+            Langkah 1: Inisialisasi
+            x0 = 0
+            y0 = r
+            p0 = 1 - r
+
+            Langkah 2: Ulangi selama x < y Jika p < 0: x=x + 1 p=p + 2x + 1 Jika p ≥ 0: x=x + 1 y=y - 1 p=p + 2x + 1 -
+                2y Langkah 3: Gambar 8 titik simetris dari (x, y) (x, y), (-x, y), (x, -y), (-x, -y) (y, x), (-y, x),
+                (y, -x), (-y, -x) Keterangan: p=parameter midpoint (xc, yc)=pusat lingkaran r=jari-jari lingkaran </div>
+        </div>
+
+        <!-- Rumus Elips -->
+        <div class="section">
+            <h2>📙 Rumus Lengkap Midpoint Elips</h2>
+            <div class="formula">
+                Bagian 1: dx < dy (Region 1) x=0 y=ry p1=ry² - rx² * ry + 0.25 * rx² Selama (2ry² * x < 2rx² * y): Jika
+                    p1 < 0: x++ p1=p1 + 2ry²x + ry² Jika p1 ≥ 0: x++, y-- p1=p1 + 2ry²x - 2rx²y + ry² Bagian 2: dx ≥ dy
+                    (Region 2) p2=ry² * (x + 0.5)² + rx² * (y - 1)² - rx² * ry² Selama y ≥ 0: Jika p2> 0:
+                    y--
+                    p2 = p2 - 2rx²y + rx²
+                    Jika p2 ≤ 0:
+                    x++, y--
+                    p2 = p2 + 2ry²x - 2rx²y + rx²
+
+                    Gambar 4 titik simetri dari (x, y):
+                    (xc±x, yc±y)
+            </div>
+        </div>
+
+        <script>
+            function plot(ctx, x, y, color = "black") {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 1, 1);
+            }
+
+            function drawCircleMidpoint(ctx, xc, yc, r) {
+                let x = 0, y = r;
+                let p = 1 - r;
+                while (x <= y) {
+                    drawCirclePoints(ctx, xc, yc, x, y);
+                    x++;
+                    if (p < 0) {
+                        p += 2 * x + 1;
+                    } else {
+                        y--;
+                        p += 2 * x + 1 - 2 * y;
+                    }
+                }
+            }
+
+            function drawCirclePoints(ctx, xc, yc, x, y) {
+                const pts = [
+                    [x, y], [-x, y], [x, -y], [-x, -y],
+                    [y, x], [-y, x], [y, -x], [-y, -x]
+                ];
+                pts.forEach(([dx, dy]) => plot(ctx, xc + dx, yc + dy));
+            }
+
+            function drawEllipseMidpoint(ctx, xc, yc, rx, ry) {
+                let x = 0, y = ry;
+                let rx2 = rx * rx, ry2 = ry * ry;
+                let p1 = ry2 - rx2 * ry + 0.25 * rx2;
+                let dx = 2 * ry2 * x;
+                let dy = 2 * rx2 * y;
+
+                while (dx < dy) {
+                    drawEllipsePoints(ctx, xc, yc, x, y);
+                    if (p1 < 0) {
+                        x++;
+                        dx = 2 * ry2 * x;
+                        p1 += dx + ry2;
+                    } else {
+                        x++; y--;
+                        dx = 2 * ry2 * x;
+                        dy = 2 * rx2 * y;
+                        p1 += dx - dy + ry2;
+                    }
+                }
+
+                let p2 = ry2 * (x + 0.5) ** 2 + rx2 * (y - 1) ** 2 - rx2 * ry2;
+
+                while (y >= 0) {
+                    drawEllipsePoints(ctx, xc, yc, x, y);
+                    if (p2 > 0) {
+                        y--;
+                        dy = 2 * rx2 * y;
+                        p2 += rx2 - dy;
+                    } else {
+                        x++; y--;
+                        dx = 2 * ry2 * x;
+                        dy = 2 * rx2 * y;
+                        p2 += dx - dy + rx2;
+                    }
+                }
+            }
+
+            function drawEllipsePoints(ctx, xc, yc, x, y) {
+                const pts = [
+                    [x, y], [-x, y], [x, -y], [-x, -y]
+                ];
+                pts.forEach(([dx, dy]) => plot(ctx, xc + dx, yc + dy));
+            }
+
+            function draw() {
+                const canvas = document.getElementById("canvas");
+                const ctx = canvas.getContext("2d");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const xc = parseInt(document.getElementById("xc").value);
+                const yc = parseInt(document.getElementById("yc").value);
+                const rx = parseInt(document.getElementById("rx").value);
+                const ry = parseInt(document.getElementById("ry").value);
+                const algo = document.getElementById("algo").value;
+
+                if (algo === "circle") {
+                    drawCircleMidpoint(ctx, xc, yc, rx);
+                } else {
+                    drawEllipseMidpoint(ctx, xc, yc, rx, ry);
+                }
+            }
+        </script>
+
+</body>
+
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Grafika 3 Dimensi - Rumus & Visualisasi</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        header {
+            padding: 1rem;
+            background: #006699;
+            color: white;
+            text-align: center;
+        }
+
+        main {
+            padding: 2rem;
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        canvas {
+            display: block;
+            margin: 2rem auto;
+            border: 1px solid #ccc;
+            background: white;
+        }
+
+        .rumus {
+            background-color: #fff;
+            padding: 1rem;
+            border-left: 5px solid #006699;
+            margin-bottom: 2rem;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        button {
+            background: #006699;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #004466;
+        }
+
+        code {
+            font-family: monospace;
+            color: #d63384;
+            display: block;
+            margin-bottom: 0.5rem;
+            white-space: pre-wrap;
+        }
+
+        h3 {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Grafika 3 Dimensi</h1>
+        <p>Pertemuan 12 - Teknik Informatika Universitas Pamulang</p>
+    </header>
+    <main>
+        <h2>Rumus-Rumus Lengkap Grafika 3D</h2>
+        <div class="rumus">
+            <h3>1. Titik dalam Ruang</h3>
+            <code>P(x, y, z)</code>
+
+            <h3>2. Garis dalam Ruang 3D</h3>
+            <code>
+Dua titik: A(x₁, y₁, z₁), B(x₂, y₂, z₂)
+Persamaan Parametrik:
+x = x₁ + t(x₂ - x₁)
+y = y₁ + t(y₂ - y₁)
+z = z₁ + t(z₂ - z₁)
+      </code>
+
+            <h3>3. Bidang Datar (Plane)</h3>
+            <code>Ax + By + Cz + D = 0</code>
+            <small>A, B, C adalah koefisien vektor normal bidang.</small>
+
+            <h3>4. Bola (Sphere)</h3>
+            <code>(x - h)² + (y - k)² + (z - l)² = r²</code>
+            <small>h, k, l adalah pusat bola; r = jari-jari</small>
+
+            <h3>5. Transformasi 3D</h3>
+            <code>
+Translasi:
+P' = P + (dx, dy, dz)
+
+Rotasi (Z-axis):
+x' = x cosθ - y sinθ
+y' = x sinθ + y cosθ
+
+Skala:
+x' = x * Sx
+y' = y * Sy
+z' = z * Sz
+      </code>
+
+            <h3>6. Proyeksi Perspektif (Kamera)</h3>
+            <code>
+x' = (x / z) * d
+y' = (y / z) * d
+      </code>
+            <small>d = jarak bidang proyeksi dari mata kamera.</small>
+
+            <h3>7. Persamaan Sinar (Ray)</h3>
+            <code>R(t) = O + t * D</code>
+            <small>O = asal sinar, D = arah vektor, t = skalar.</small>
+
+            <h3>8. Permukaan Bezier Bicubic</h3>
+            <code>
+P(u,v) = Σ(i=0→3) Σ(j=0→3) B₃ⁱ(u) · B₃ʲ(v) · Pᵢⱼ
+
+Bₙⁱ(t) = C(n, i) · tⁱ · (1 - t)ⁿ⁻ⁱ
+C(n, i) = n! / (i!(n-i)!)
+      </code>
+
+            <h2>🧪 Simulasi Kubus 3D</h2>
+            <p>Visualisasi kubus 3D dengan rotasi otomatis.</p>
+            <div class="controls">
+                <button onclick="toggleAnimation()">Start/Stop</button>
+                <button onclick="resetCube()">Reset</button>
+            </div>
+            <canvas id="canvas" width="500" height="500"></canvas>
+        </div>
+    </main>
+    <footer>
+        <p>© 2025 – Teknik Informatika UNPAM</p>
+    </footer>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const center = { x: 250, y: 250 };
+
+        let animationId;
+        let isAnimating = false;
+        let rotX = 0, rotY = 0;
+
+        // Titik-titik kubus 3D
+        const cube = [
+            [-50, -50, -50], [50, -50, -50], [50, 50, -50], [-50, 50, -50],  // depan
+            [-50, -50, 50], [50, -50, 50], [50, 50, 50], [-50, 50, 50]       // belakang
+        ];
+
+        // Garis-garis kubus
+        const edges = [
+            [0, 1], [1, 2], [2, 3], [3, 0],  // depan
+            [4, 5], [5, 6], [6, 7], [7, 4],  // belakang
+            [0, 4], [1, 5], [2, 6], [3, 7]   // penghubung
+        ];
+
+        function rotateX(point, angle) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            return [
+                point[0],
+                point[1] * cos - point[2] * sin,
+                point[1] * sin + point[2] * cos
+            ];
+        }
+
+        function rotateY(point, angle) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            return [
+                point[0] * cos + point[2] * sin,
+                point[1],
+                -point[0] * sin + point[2] * cos
+            ];
+        }
+
+        function project3D(point) {
+            // Proyeksi sederhana ke 2D
+            const distance = 200;
+            const z = point[2] + distance;
+            return {
+                x: center.x + (point[0] * distance) / z,
+                y: center.y + (point[1] * distance) / z
+            };
+        }
+
+        function drawCube() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Transform semua titik
+            const rotatedPoints = cube.map(point => {
+                let rotated = rotateX(point, rotX);
+                rotated = rotateY(rotated, rotY);
+                return project3D(rotated);
+            });
+
+            // Gambar garis-garis kubus
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            edges.forEach(([a, b]) => {
+                ctx.moveTo(rotatedPoints[a].x, rotatedPoints[a].y);
+                ctx.lineTo(rotatedPoints[b].x, rotatedPoints[b].y);
+            });
+
+            ctx.stroke();
+
+            // Gambar titik-titik
+            ctx.fillStyle = "red";
+            rotatedPoints.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function animate() {
+            rotX += 0.01;
+            rotY += 0.015;
+            drawCube();
+
+            if (isAnimating) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            if (isAnimating) {
+                animate();
+            } else {
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        function resetCube() {
+            rotX = 0;
+            rotY = 0;
+            isAnimating = false;
+            cancelAnimationFrame(animationId);
+            drawCube();
+        }
+
+        // Gambar kubus pertama kali
+        drawCube();
+    </script>
+</body>
+
+</html>

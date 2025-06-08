@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagram Lingkaran</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .chart-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .chart-container {
+            position: relative;
+        }
+
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 50%;
+        }
+
+        .legend {
+            min-width: 200px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .legend-item:hover {
+            background-color: #e8e8e8;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 3px;
+        }
+
+        .legend-text {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .legend-value {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e7f3ff;
+            border-radius: 5px;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Diagram Lingkaran Data Penjualan Fashion</h1>
+
+        <div class="chart-wrapper">
+            <div class="chart-container">
+                <canvas id="pieChart" width="300" height="300"></canvas>
+            </div>
+
+            <div class="legend" id="legend">
+                <!-- Legend akan dibuat dengan JavaScript -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="updateChart()">Update Data</button>
+            <button onclick="animateChart()">Animasi</button>
+        </div>
+
+        <div class="info" id="info">
+            Klik pada legenda untuk melihat detail data
+        </div>
+    </div>
+
+    <script>
+        // Data untuk diagram
+        let data = [
+            { label: 'Sepatu', value: 35, color: '#8B4513' },
+            { label: 'Baju', value: 30, color: '#FF1493' },
+            { label: 'Celana', value: 25, color: '#4169E1' },
+            { label: 'Topi', value: 10, color: '#32CD32' }
+        ];
+
+        const canvas = document.getElementById('pieChart');
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 120;
+
+        function drawPieChart() {
+            // Bersihkan canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Hitung total
+            const total = data.reduce((sum, item) => sum + item.value, 0);
+
+            let currentAngle = -Math.PI / 2; // Mulai dari atas
+
+            // Gambar setiap segmen
+            data.forEach(function (item) {
+                const sliceAngle = (item.value / total) * 2 * Math.PI;
+
+                // Gambar segmen
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = item.color;
+                ctx.fill();
+
+                // Gambar garis tepi
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Gambar label persentase
+                const labelAngle = currentAngle + sliceAngle / 2;
+                const labelX = centerX + Math.cos(labelAngle) * (radius * 0.7);
+                const labelY = centerY + Math.sin(labelAngle) * (radius * 0.7);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(item.value + '%', labelX, labelY);
+
+                currentAngle += sliceAngle;
+            });
+
+            // Gambar lingkaran tengah untuk efek donut (opsional)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Tulis total di tengah
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Total', centerX, centerY - 5);
+            ctx.fillText(total + '%', centerX, centerY + 15);
+        }
+
+        function createLegend() {
+            const legendContainer = document.getElementById('legend');
+            legendContainer.innerHTML = '';
+
+            const total = data.reduce((sum, item) => sum + item.value, 0);
+
+            data.forEach(function (item, index) {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.backgroundColor = item.color;
+
+                const textContainer = document.createElement('div');
+                textContainer.className = 'legend-text';
+
+                const percentage = ((item.value / total) * 100).toFixed(1);
+
+                textContainer.innerHTML = item.label + '<br><span class="legend-value">' +
+                    item.value + '% (' + percentage + '% dari total)</span>';
+
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(textContainer);
+
+                // Event listener untuk klik
+                legendItem.addEventListener('click', function () {
+                    showInfo(item, percentage);
+                });
+
+                legendContainer.appendChild(legendItem);
+            });
+        }
+
+        function showInfo(item, percentage) {
+            const infoDiv = document.getElementById('info');
+            infoDiv.innerHTML = '<strong>' + item.label + '</strong><br>' +
+                'Nilai: ' + item.value + '%<br>' +
+                'Persentase dari total: ' + percentage + '%';
+        }
+
+        function updateChart() {
+            // Generate data acak baru untuk fashion
+            const labels = ['Sepatu', 'Baju', 'Celana', 'Topi'];
+            const colors = ['#8B4513', '#FF1493', '#4169E1', '#32CD32'];
+
+            data = [];
+            for (let i = 0; i < 4; i++) {
+                data.push({
+                    label: labels[i],
+                    value: Math.floor(Math.random() * 30) + 15,
+                    color: colors[i]
+                });
+            }
+
+            drawPieChart();
+            createLegend();
+
+            document.getElementById('info').innerHTML = 'Data fashion telah diperbarui! Klik pada legenda untuk melihat detail.';
+        }
+
+        function animateChart() {
+            let animationStep = 0;
+            const totalSteps = 20;
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const total = data.reduce((sum, item) => sum + item.value, 0);
+                let currentAngle = -Math.PI / 2;
+
+                data.forEach(function (item) {
+                    const sliceAngle = (item.value / total) * 2 * Math.PI;
+                    const animatedAngle = (sliceAngle * animationStep) / totalSteps;
+
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + animatedAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = item.color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    currentAngle += sliceAngle;
+                });
+
+                animationStep++;
+
+                if (animationStep <= totalSteps) {
+                    setTimeout(animate, 50);
+                } else {
+                    drawPieChart(); // Gambar chart final dengan label
+                }
+            }
+
+            animate();
+        }
+
+        // Event listener untuk hover pada canvas
+        canvas.addEventListener('mousemove', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Hitung jarak dari center
+            const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+
+            if (distance <= radius && distance > 30) {
+                canvas.style.cursor = 'pointer';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+        });
+
+        // Inisialisasi
+        drawPieChart();
+        createLegend();
+    </script>
+</body>
+
+</html>
